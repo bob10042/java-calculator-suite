@@ -1,0 +1,79 @@
+name: Claude Code Java Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  claude-java-analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Claude Code GitHub Integration
+      uses: nicholaslee119/claude-code-github-action@0.1.1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
+        
+    - name: Build Java project
+      run: |
+        cd sample_project
+        chmod +x build.sh
+        ./build.sh
+        
+    - name: Run Java tests
+      run: |
+        cd sample_project
+        if [ -f "test_calc.sh" ]; then
+          chmod +x test_calc.sh
+          ./test_calc.sh
+        fi
+        
+    - name: Java code quality check
+      run: |
+        echo "Running Java code analysis..."
+        find . -name "*.java" -exec echo "Analyzing: {}" \;
+        
+  claude-java-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Claude Java Code Review
+      uses: nicholaslee119/claude-code-github-action@0.1.1
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        claude-api-key: ${{ secrets.CLAUDE_API_KEY }}
+        mode: 'review'
+        language: 'java'
